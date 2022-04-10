@@ -4,3 +4,5 @@ A discord bot that downloads and processes a YouTube video, and turns it into as
 Requires an token.env file in the same directory, which contains:
 
 TOKEN=your_discord_bot_token
+
+Currently only supports one video playing at a time.
