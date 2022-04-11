@@ -7,17 +7,24 @@ import random
 import sys
 import argparse
 import cv2
+from imagemaker import processFunc
 
 
 
 
 def main(**kwargs):
-    global SYMBOLSF, SYMBOLS, RESOLUTION, FPS, A, M, L, MAPPING, VIDLINK, SYMBOLSET, DISCORD, OUTPUT
+    global SYMBOLSF, SYMBOLS, RESOLUTION, FPS, A, M, L, MAPPING, VIDLINK, SYMBOLSET, DISCORD, OUTPUT, IMAGE
     SYMBOLS = "'^\",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
     SYMBOLSF =  " .:-=+*#%@"
     A, M, L = "average", "min_max", "luminosity"
 
     DISCORD = kwargs.get('discord')
+
+    if kwargs.get("image") != None:
+        IMAGEMODE = kwargs.get("image")
+    else:
+        IMAGEMODE = 0
+
 
     if kwargs.get('symbols') == 1:
         SYMBOLSET = "SYMBOLS"
@@ -28,12 +35,18 @@ def main(**kwargs):
     if kwargs.get('width') != None:
         WIDTH = kwargs.get('width')
     else:
-        WIDTH = 44
+        if IMAGEMODE != 1:
+            WIDTH = 44
+        else:
+            WIDTH=180
 
     if kwargs.get('height') != None:
         HEIGHT = kwargs.get('height')
     else:
-        HEIGHT = 22
+        if IMAGEMODE != 1:
+            HEIGHT = 22
+        else:
+            HEIGHT=90
 
     if kwargs.get('frameskip') != None:
         FRAMESKIP = kwargs.get('frameskip')
@@ -60,20 +73,18 @@ def main(**kwargs):
         OUTPUT = "video"
 
 
+
     VIDLINK = kwargs.get('VideoLink')
-    if discordCheck():
-        yield "Getting video..."
 
 
     downloadVideo(VIDLINK)
 
-    if discordCheck():
-        yield "Processing video..."
+
 #    video = loadVideo(OUTPUT + "out.mp4")
     video = cv2.VideoCapture(str(OUTPUT + ".mp4"))
     increment = 0
 
-    maxattempts = 5
+    maxattempts = 99
     attempts = 0
     if (video.isOpened() == False):
         while attempts < maxattempts and video.isOpened() == False:
@@ -99,10 +110,12 @@ def main(**kwargs):
         if increment % FRAMESKIP == 0:
             pixels = processPixels(frame)
             output = printPixels(pixels)
+            if IMAGEMODE == 1:
+                output = processFunc(output, OUTPUT)
+            elif IMAGEMODE == 0 and discordCheck() == False:
+                print(output)
             if discordCheck():
                 yield output
-            else:
-                print(output)
             #so a video gets loaded into heightxwidthxrgb so its like [H][W][RGB]
             if discordCheck == False:
                 time.sleep(1/FPS)
@@ -127,6 +140,7 @@ def parse():
     parser.add_argument("-m", "--mapping", type=int, help="Which brightness mapping method should be used. Values can be 1 for average, 2 for min-max, 3 for luminosity. Default is 3.")
     parser.add_argument("-s", "--symbols", type=int, help="Which set of symbols should be used. 1 for more symbols, 2 for less symbols. Default is 2.")
     parser.add_argument("-o", "--output", help="To what file should the video be saved, that is going to be used for processing? Default is video.mp4")
+    parser.add_argument("-i", "--image", type=int, help="1 to instead output to image file, 0 to disable. Default is 0.")
     args = parser.parse_args()
     return vars(args)
 
