@@ -80,6 +80,7 @@ def main(**kwargs):
     downloadVideo(VIDLINK)
 
 
+
 #    video = loadVideo(OUTPUT + "out.mp4")
     video = cv2.VideoCapture(str(OUTPUT + ".mp4"))
     increment = 0
@@ -146,6 +147,7 @@ def downloadVideo(link):
     yt = YouTube(link)
 
     stream = yt.streams.filter(res="480p", file_extension="mp4")
+    print(stream)
 
     if len(stream) < 1:
         raise IndexError("No streams found")
@@ -159,8 +161,10 @@ def downloadVideo(link):
         except Exception as e:
             print("Error downloading. Retrying... Reason: " + str(e))
             attempts = attempts + 1
-    if attempts == maxattempts:
+    if attempts >= maxattempts:
         print("Error downloading. Exiting...")
+        raise ValueError
+    attempts = 0
 
     
 def loadVideo(videoname):

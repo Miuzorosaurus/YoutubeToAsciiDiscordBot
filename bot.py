@@ -126,7 +126,7 @@ async def ascii(ctx, link, *args):
                 exetime = 1
             if options.get('image') != 1:
                 time.sleep(exetime)
-    except:
+    except Exception as e:
         print("Error: " + str(e))
         await ctx.send("```Error has occured.```")
 
