@@ -95,6 +95,7 @@ def main(**kwargs):
             attempts = attempts + 1
         if attempts == maxattempts:
             print("Error has occured. Failed to open video.")
+            raise IndexError
     attempts = 0
 
     while video.isOpened():
@@ -146,7 +147,7 @@ def parse():
 def downloadVideo(link):
     yt = YouTube(link)
 
-    stream = yt.streams.filter(res="480p", file_extension="mp4")
+    stream = yt.streams.filter(res="480p", file_extension="mp4", only_video = True)
     print(stream)
 
     if len(stream) < 1:
