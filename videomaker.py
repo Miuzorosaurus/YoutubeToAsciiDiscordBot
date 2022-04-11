@@ -1,84 +1,160 @@
 #!/usr/bin/env python
 
-from vidgear.gears import VideoGear
 import time
 import numpy as np
-import moviepy.editor as mp
 from pytube import YouTube
 import random
 import sys
+import argparse
+import cv2
 
 
 
 
-def main(link, width = 44, height = 22, frameskip = 5, mapping = "L", charset = 2):
-    global SYMBOLSF, SYMBOLS, RESOLUTION, FPS, A, M, L, MAPPING, VIDLINK, SYMBOLSET
+def main(**kwargs):
+    global SYMBOLSF, SYMBOLS, RESOLUTION, FPS, A, M, L, MAPPING, VIDLINK, SYMBOLSET, DISCORD, OUTPUT
     SYMBOLS = "'^\",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
     SYMBOLSF =  " .:-=+*#%@"
     A, M, L = "average", "min_max", "luminosity"
 
-    if charset == 1:
+    DISCORD = kwargs.get('discord')
+
+    if kwargs.get('symbols') == 1:
         SYMBOLSET = "SYMBOLS"
-    elif charset == 2:
+    else:
         SYMBOLSET = "SYMBOLSF"
 
-    RESOLUTION = (width,height)
-    FPS = 1
-    FRAMESKIP = frameskip
-    if mapping == "A":
+
+    if kwargs.get('width') != None:
+        WIDTH = kwargs.get('width')
+    else:
+        WIDTH = 44
+
+    if kwargs.get('height') != None:
+        HEIGHT = kwargs.get('height')
+    else:
+        HEIGHT = 22
+
+    if kwargs.get('frameskip') != None:
+        FRAMESKIP = kwargs.get('frameskip')
+    else:
+        FRAMESKIP = 5
+    if kwargs.get('fps') != None:
+        FPS = kwars.get('fps')
+    else:
+        FPS = 8
+
+    RESOLUTION = (WIDTH,HEIGHT)
+
+
+    if kwargs.get("mapping") == 1:
         MAPPING = A
-    elif mapping == "M":
+    elif kwargs.get("mapping") == 2:
         MAPPING = M
-    elif mapping == "L":
+    else:
         MAPPING = L
 
-#   VIDLINK = str(sys.argv[1])
-    VIDLINK = link
-    yield "Getting video..."
-    downloadVideo(VIDLINK)
-    yield "Processing video..."
-    resizeVideo("video.mp4")
-    video = loadVideo("videoout.mp4")
-    yield "Video has been processed..."
-    increment = 0
-    while True:
-        frame = video.read()
+    if kwargs.get("output") != None:
+        OUTPUT = kwargs.get("output")
+    else:
+        OUTPUT = "video"
 
-        if frame is None:
-            yield None
+
+    VIDLINK = kwargs.get('VideoLink')
+    if discordCheck():
+        yield "Getting video..."
+
+
+    downloadVideo(VIDLINK)
+
+    if discordCheck():
+        yield "Processing video..."
+#    video = loadVideo(OUTPUT + "out.mp4")
+    video = cv2.VideoCapture(str(OUTPUT + ".mp4"))
+    increment = 0
+
+    maxattempts = 5
+    attempts = 0
+    if (video.isOpened() == False):
+        while attempts < maxattempts and video.isOpened() == False:
+            print("Error occured. Retrying..")
+            downloadVideo(VIDLINK)
+            video = cv2.VideoCapture(str(OUTPUT + ".mp4"))
+            attempts = attempts + 1
+        if attempts == maxattempts:
+            print("Error has occured. Failed to open video. Exiting...")
+            exit()
+    attempts = 0
+
+    while video.isOpened():
+        ret, frame = video.read()
+
+        if ret == False:
             break
+
+        frame = cv2.resize(frame, (WIDTH, HEIGHT), fx = 0, fy = 0, interpolation = cv2.INTER_AREA)
 
         #FRAME SKIP
         increment = increment + 1
         if increment % FRAMESKIP == 0:
             pixels = processPixels(frame)
             output = printPixels(pixels)
-            yield output
+            if discordCheck():
+                yield output
+            else:
+                print(output)
             #so a video gets loaded into heightxwidthxrgb so its like [H][W][RGB]
-            time.sleep(1/FPS)
+            if discordCheck == False:
+                time.sleep(1/FPS)
             increment = 0
 
-    video.stop()
+    video.release()
+    exit()
 
+
+def discordCheck():
+    if DISCORD!= None:
+        return True
+
+
+def parse():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("VideoLink", help="Link to the video")
+    parser.add_argument("--height", type=int, help="Video height. Default is 22.")
+    parser.add_argument("--width", type=int, help="Video width. Default is 44.")
+    parser.add_argument("--frameskip", type=int, help="How often should frames be skipped. Default is 5.")
+    parser.add_argument("-f", "--fps", type=int, help="Set how many frames per second should the program produce. Default is 8.")
+    parser.add_argument("-m", "--mapping", type=int, help="Which brightness mapping method should be used. Values can be 1 for average, 2 for min-max, 3 for luminosity. Default is 3.")
+    parser.add_argument("-s", "--symbols", type=int, help="Which set of symbols should be used. 1 for more symbols, 2 for less symbols. Default is 2.")
+    parser.add_argument("-o", "--output", help="To what file should the video be saved, that is going to be used for processing? Default is video.mp4")
+    args = parser.parse_args()
+    return vars(args)
 
 def downloadVideo(link):
     yt = YouTube(link)
 
-    stream = yt.streams.filter(res="360p", file_extension="mp4", type="video")
+    stream = yt.streams.filter(res="480p", file_extension="mp4", type="video")
 
     if len(stream) < 1:
         raise IndexError("No streams found")
     id = random.randint(0,len(stream)-1)
 
-    stream[id].download(filename="video.mp4")
+    attempts = 0
+    maxattempts = 5
+    while attempts < maxattempts:
+        try:
+            stream[id].download(filename=(OUTPUT + ".mp4"))
+            break
+        except:
+            print("Error downloading. Retrying...")
+            attempts = attempts + 1
+    if attempts == maxattempts:
+        print("Error downloading. Exiting...")
+        exit()
 
-def resizeVideo(video):
-    clip = mp.VideoFileClip(video)
-    clip_resized = clip.resize(RESOLUTION)
-    clip_resized.write_videofile("videoout.mp4")
-
+    
 def loadVideo(videoname):
-    stream = VideoGear(source=videoname).start()
+    stream = cv2.VideoCapture(videoname)
     return stream
 
 def goThroughVideo(video):
@@ -145,4 +221,8 @@ def printPixels(storage):
     return string
 
 if __name__ == "__main__":
-    main()
+    args = parse()
+    while True:
+        output = main(**args)
+        for x in output:
+            print(x)
