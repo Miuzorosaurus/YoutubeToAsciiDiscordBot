@@ -103,29 +103,33 @@ async def ascii(ctx, link, *args):
     print(options)
 
     editableMessage = False
+    try:
+        function = main(**options)
+        for i in function:
+            if i == None or origin not in rundict:
+                break
+            start_time = time.time()
 
-    function = main(**options)
-    for i in function:
-        if i == None or origin not in rundict:
-            break
-        start_time = time.time()
+            if editableMessage == False:
+                if options.get('image') != 1:
+                    message = await ctx.channel.send("```" + i + "```")
+                    editableMessage = True
+                else:
+                    message = await ctx.channel.send(file=discord.File(i))
 
-        if editableMessage == False:
+            elif editableMessage == True:
+                await message.edit(content=("```" + i + "```"))
+
+            end_time = time.time()
+            exetime = 1 - (end_time - start_time) + 0.1
+            if exetime < 0:
+                exetime = 1
             if options.get('image') != 1:
-                message = await ctx.channel.send("```" + i + "```")
-                editableMessage = True
-            else:
-                message = await ctx.channel.send(file=discord.File(i))
+                time.sleep(exetime)
+    except:
+        print("Error: " + str(e))
+        await ctx.send("```Error has occured.```")
 
-        elif editableMessage == True:
-            await message.edit(content=("```" + i + "```"))
-
-        end_time = time.time()
-        exetime = 1 - (end_time - start_time) + 0.1
-        if exetime < 0:
-            exetime = 1
-        if options.get('image') != 1:
-            time.sleep(exetime)
     index = index - 1
 
 @bot.command()

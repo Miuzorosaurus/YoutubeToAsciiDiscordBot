@@ -84,7 +84,7 @@ def main(**kwargs):
     video = cv2.VideoCapture(str(OUTPUT + ".mp4"))
     increment = 0
 
-    maxattempts = 99
+    maxattempts = 15
     attempts = 0
     if (video.isOpened() == False):
         while attempts < maxattempts and video.isOpened() == False:
@@ -93,8 +93,7 @@ def main(**kwargs):
             video = cv2.VideoCapture(str(OUTPUT + ".mp4"))
             attempts = attempts + 1
         if attempts == maxattempts:
-            print("Error has occured. Failed to open video. Exiting...")
-            exit()
+            print("Error has occured. Failed to open video.")
     attempts = 0
 
     while video.isOpened():
@@ -122,7 +121,6 @@ def main(**kwargs):
             increment = 0
 
     video.release()
-    exit()
 
 
 def discordCheck():
@@ -147,24 +145,22 @@ def parse():
 def downloadVideo(link):
     yt = YouTube(link)
 
-    stream = yt.streams.filter(res="480p", file_extension="mp4", type="video")
+    stream = yt.streams.filter(res="480p", file_extension="mp4")
 
     if len(stream) < 1:
         raise IndexError("No streams found")
-    id = random.randint(0,len(stream)-1)
 
     attempts = 0
     maxattempts = 5
     while attempts < maxattempts:
         try:
-            stream[id].download(filename=(OUTPUT + ".mp4"))
+            stream[0].download(filename=(OUTPUT + ".mp4"))
             break
-        except:
-            print("Error downloading. Retrying...")
+        except Exception as e:
+            print("Error downloading. Retrying... Reason: " + str(e))
             attempts = attempts + 1
     if attempts == maxattempts:
         print("Error downloading. Exiting...")
-        exit()
 
     
 def loadVideo(videoname):
