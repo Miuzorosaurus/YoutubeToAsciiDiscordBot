@@ -12,3 +12,5 @@ Supports both ascii text and ascii image output
 Supports playing in multiple channels, however due to rate limit it's not recommended.
 
 Running videomaker.py as standalone is also supported, and takes command line arguments.
+
+NOTE: Some videos will not play due to some error from pytube package. I don't know how to fix it.
